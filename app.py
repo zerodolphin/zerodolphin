@@ -16,7 +16,7 @@ GEMINI_ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{MOD
 def home():
     return jsonify({
         "status": "online",
-        "service": "ZeroDolphin Proxy Gateway",
+        "service": "ZeroDolphin Gateway Engine",
         "endpoint": "/v1/chat"
     }), 200
 
@@ -27,12 +27,12 @@ def health():
 @app.route("/v1/chat", methods=["POST"])
 def proxy_gemini():
     if not GEMINI_API_KEY:
-        return jsonify({"error": "Server misconfigured: missing GEMINI_API_KEY"}), 500
+        return jsonify({"error": "Server misconfigured: GEMINI_API_KEY is missing on Render."}), 500
 
     try:
         client_payload = request.get_json()
     except Exception as e:
-        return jsonify({"error": f"Invalid JSON payload: {str(e)}"}), 400
+        return jsonify({"error": f"Invalid JSON payload received: {str(e)}"}), 400
 
     req = urllib.request.Request(
         GEMINI_ENDPOINT,
@@ -43,7 +43,6 @@ def proxy_gemini():
     max_retries = 5
     retry_delay = 3
 
-    # Retry loop directly inside Render server
     for attempt in range(max_retries):
         try:
             with urllib.request.urlopen(req) as resp:
@@ -52,21 +51,19 @@ def proxy_gemini():
 
         except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8")
-            # If rate-limited or busy, pause and retry on Render
             if e.code in [429, 503] and attempt < max_retries - 1:
                 time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff: 3s, 6s, 12s, 24s
+                retry_delay *= 2
                 continue
             
-            # Return JSON formatted error instead of crashing
             return jsonify({
-                "error": "Upstream Gemini Error",
+                "error": "Upstream Gemini API Error",
                 "code": e.code,
                 "message": err_body
             }), e.code
 
         except Exception as e:
-            return jsonify({"error": f"Internal gateway exception: {str(e)}"}), 500
+            return jsonify({"error": f"Gateway Exception: {str(e)}"}), 500
 
     return jsonify({"error": "Gemini API rate limit exceeded after maximum retries"}), 429
 
