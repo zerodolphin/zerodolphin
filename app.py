@@ -4,6 +4,7 @@ import urllib.request
 import urllib.error
 import json
 from flask import Flask, request, jsonify
+import time 
 
 app = Flask(__name__)
 
@@ -26,30 +27,38 @@ def health():
     return jsonify({"status": "healthy"}), 200
 
 # 3. PROXY ROUTE (Used by zerodolphine.py)
+# app.py (Deploy to Render)
+import time
+
 @app.route("/v1/chat", methods=["POST"])
 def proxy_gemini():
     if not GEMINI_API_KEY:
         return jsonify({"error": "Server misconfigured: missing GEMINI_API_KEY"}), 500
 
-    try:
-        client_payload = request.get_json()
-        
-        req = urllib.request.Request(
-            GEMINI_ENDPOINT,
-            data=json.dumps(client_payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
+    client_payload = request.get_json()
+    req = urllib.request.Request(
+        GEMINI_ENDPOINT,
+        data=json.dumps(client_payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"}
+    )
 
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return jsonify(data)
+    max_retries = 5
+    retry_delay = 3
 
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8")
-        return jsonify({"error": err_msg}), e.code
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return jsonify(data)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+        except urllib.error.HTTPError as e:
+            # Handle rate limiting (429) or temporary server overload (503)
+            if e.code in [429, 503] and attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Wait 3s, then 6s, then 12s...
+                continue
+            
+            err_msg = e.read().decode("utf-8")
+            return jsonify({"error": err_msg}), e.code
+
+    return jsonify({"error": "Gemini API busy after maximum retries"}), 503
