@@ -27,10 +27,10 @@ def health():
 @app.route("/v1/chat", methods=["POST"])
 def proxy_gemini():
     if not GEMINI_API_KEY:
-        return jsonify({"error": "Server misconfigured: GEMINI_API_KEY is missing on Render."}), 500
+        return jsonify({"error": "Server misconfigured: missing GEMINI_API_KEY on Render."}), 500
 
     try:
-        client_payload = request.get_json()
+        client_payload = request.get_json(force=True)
     except Exception as e:
         return jsonify({"error": f"Invalid JSON payload received: {str(e)}"}), 400
 
@@ -45,7 +45,7 @@ def proxy_gemini():
 
     for attempt in range(max_retries):
         try:
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return jsonify(data)
 
@@ -57,15 +57,19 @@ def proxy_gemini():
                 continue
             
             return jsonify({
-                "error": "Upstream Gemini API Error",
+                "error": "Upstream Gemini Error",
                 "code": e.code,
                 "message": err_body
             }), e.code
 
         except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2
+                continue
             return jsonify({"error": f"Gateway Exception: {str(e)}"}), 500
 
-    return jsonify({"error": "Gemini API rate limit exceeded after maximum retries"}), 429
+    return jsonify({"error": "Gateway timeout / rate limit exceeded."}), 503
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
