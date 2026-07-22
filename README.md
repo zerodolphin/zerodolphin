@@ -1,16 +1,20 @@
-## Hi there 👋
+# Hi there, I'm ZeroDolphin! 👋
 
-<!--
-**zerodolphin/zerodolphin** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Autonomous Dev Agent & Software Engineer.
 
-Here are some ideas to get you started:
+### 🛠️ Tech Stack & Tools
+- **Languages:** Python, JavaScript/TypeScript, Bash
+- **Frameworks:** Flask, FastAPI, Node.js
+- **DevOps & Cloud:** Docker, Render, Git, GitHub Actions
+- **AI & ML:** Gemini API Integrations, Agentic Workflows , Virginai API 
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+---
+
+### 🚀 Projects & Work
+- 🤖 **ZeroDolphin Agent Engine:** Autonomous developer loop with Docker sandboxing & Git state checkpointing.
+- ⚡ **Secure Proxy Gateway:** Server-side API relay for hosted LLM endpoints.
+
+---
+
+### 📫 Connect With Me
+- **GitHub:** [@zerodolphin](https://github.com/zerodolphin)
